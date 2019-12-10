@@ -15,7 +15,7 @@ np.warnings.filterwarnings('ignore')
 
 run_type = 'gw170817'
 
-t0 = 11.3888399999 / 24. #Start in days post-merger
+t_0 = 11.3888399999 / 24. #Start in days post-merger
 true_t0 = 57982.528524 #Actual start day
 filters = ['g','r','i','z','y']
 
@@ -78,7 +78,7 @@ for x in filters:
     observations[x] = KN_obs[x].values
     time_index[x] = np.array(LC_timeindex[~np.isnan(observations[x])])
     observations[x] = np.array(observations[x][~np.isnan(observations[x])])
-Truth = [t0, 44, 0.04,0.15,1.5,0.025,0.3,4.0]
+Truth = [t_0, 44, 0.04,0.15,1.5,0.025,0.3,4.0]
 
 
 def like_single(args):
@@ -88,14 +88,13 @@ def like_single(args):
         index = time_index[x] + t0
         xtest_b = np.array([[index[y],np.log10(mej_b),np.log10(vej_b),Xlan_b] for y,t in enumerate(index)])
         xtest_r = np.array([[index[y],np.log10(mej),np.log10(vej),Xlan] for y,t in enumerate(index)])
-        y_pred_i_blue, sigma_i_blue = GPs[x].predict(xtest_b,return_std=True)
-        y_pred_i_red, sigma_i_red = GPs[x].predict(xtest_r,return_std=True)
-        KNLC =  -2.5*np.log10(10**(-(y_pred_i_blue * float(Norms[x][0]) + float(Norms[x][1]))*0.4) + 10**(-(y_pred_i_red * float(Norms[x][0]) + float(Norms[x][1]))*0.4))
-        sigmas =  np.sqrt(sigma_i_blue**2 + sigma_i_red**2) * float(Norms[x][0])
+        y_pred_blue, sigma_blue = GPs[x].predict(xtest_b,return_std=True)
+        y_pred_red, sigma_red = GPs[x].predict(xtest_r,return_std=True)
+        KNLC =  -2.5*np.log10(10**(-(y_pred_blue * float(Norms[x][0]) + float(Norms[x][1]))*0.4) + 10**(-(y_pred_red * float(Norms[x][0]) + float(Norms[x][1]))*0.4))
+        sigmas =  np.sqrt(sigma_blue**2 + sigma_red**2) * float(Norms[x][0])
         KN_modeltest = app_m(D_L,KNLC)
         filter_sum_prob[x] = logsumexp(norm.logpdf(KN_modeltest,loc=observations[x],scale=sigmas))
-    #Double check the returned prob against maths. Sum or logsumexp??
-    return logsumexp([filter_sum_prob[x] for x in filters])
+    return np.sum([filter_sum_prob[x] for x in filters])
 
 import multiprocessing as mp
 class KNmodelprob(bilby.Likelihood):
@@ -122,7 +121,7 @@ def convert_x_y_to_z(parameters):
 
 priors = bilby.core.prior.PriorDict(conversion_function=convert_x_y_to_z)
 priors['D_L'] = bilby.prior.Uniform(minimum=40,maximum=49,name='D_L')
-priors['t0'] = bilby.prior.Uniform(minimum=0.01,maximum=3,name='t0')
+priors['t0'] = bilby.prior.Uniform(minimum=0.,maximum=5,name='t0')
 priors['mej'] = bilby.prior.Uniform(minimum=0.001,maximum=0.1,name='mej')
 priors['vej'] = bilby.prior.Uniform(minimum=0.05,maximum=0.35,name='vej')
 priors['Xlan'] = bilby.prior.Uniform(minimum=1.,maximum=2.,name='Xlan')
@@ -134,15 +133,16 @@ priors['vfrac'] = bilby.prior.Constraint(minimum=0.,maximum=0.25,name='vfrac')
 
 print('About to run sampler')
 print(datetime.now())
-
+"""
 now = datetime.now()
 l = '{}'.format(now.strftime("%Y-%m-%d-%H%M"))
 rpath = 'Results/{}/{}'.format(run_type,l)
 
 os.mkdir(rpath)
 
-sampler = bilby.run_sampler(KNmodelprob(), priors, sampler='dynesty', outdir='Results/{}/{}'.format(run_type,l),label=l,verbose = True, dlogz = .1,npoints = 2000)
+sampler = bilby.run_sampler(KNmodelprob(), priors, sampler='dynesty', outdir='Results/{}/{}'.format(run_type,l),label=l,verbose = True, dlogz = .01,npoints = 2000)
 #sampler = bilby.run_sampler(KNmodelprob(), priors, sampler='ptemcee', outdir='Results/{}/{}'.format(run_type,l),label=l,nburn=Nburnin, nwalkers = Nens, ntemps=Ntemps,Tmax=Tmax,iterations=Nsteps)
+#sampler = bilby.run_sampler(KNmodelprob(), priors, sampler='dynesty', outdir='Results/{}/{}'.format(run_type,l),label=l,verbose = True, resume=True, dlogz = .001,npoints = 2000)
 
 
 print('Run complete')
@@ -150,4 +150,5 @@ print(datetime.now())
 
 np.savetxt('Results/{}/{}/posterior'.format(run_type,l),np.array(sampler.posterior))
 
-sampler.plot_corner(truth={'t0':t0,'mej':0.040,'vej':0.15,'Xlan':1.5,'mej_b':0.025,'vej_b':0.3,'Xlan_b':4.})
+sampler.plot_corner(truth={'t0':t0,'D_L':44,'mej':0.040,'vej':0.15,'Xlan':1.5,'mej_b':0.025,'vej_b':0.3,'Xlan_b':4.})
+"""
