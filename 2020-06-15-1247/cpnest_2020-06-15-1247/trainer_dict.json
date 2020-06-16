@@ -1,0 +1,39 @@
+{
+    "lr": 0.0001,
+    "training_frequency": 1000,
+    "batch_size": 100,
+    "val_size": 0.1,
+    "max_epochs": 1000,
+    "patience": 100,
+    "device_tag": "cpu",
+    "proposal_device": "cpu",
+    "normalise": false,
+    "logit": false,
+    "truncate_proposal": false,
+    "proposal": "gaussian",
+    "proposal_size": 10000,
+    "fuzz": 1.0,
+    "memory": false,
+    "plot": true,
+    "train_on_empty": true,
+    "weights_reset": 1,
+    "reparameterisations": {},
+    "model_dict": {
+        "n_inputs": 8,
+        "n_neurons": 32,
+        "n_layers": 2,
+        "n_blocks": 4,
+        "ftype": "realnvp_joint"
+    },
+    "cooldown": 100,
+    "parameters": [
+        "D_L",
+        "t0",
+        "mej",
+        "vej",
+        "Xlan",
+        "mej_b",
+        "vej_b",
+        "Xlan_b"
+    ]
+}
